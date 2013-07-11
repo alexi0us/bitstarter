@@ -13,7 +13,7 @@ References:
 
  + commander.js
    - https://github.com/visionmedia/commander.js
-   - http://tjholowaychuk.com/post/9103188408/commander-js-nodejs-command-line-interfaces-made-easy
+   - http://tjholowaychuk.com/post/9103188408/commander-js-nodejs-command-line-i                                                                                                 nterfaces-made-easy
 
  + JSON
    - http://en.wikipedia.org/wiki/JSON
@@ -29,12 +29,13 @@ var rest = require('restler');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 var URL_DEFAULT="http://floating-peak-9773.herokuapp.com/";
+var TMPFILE_DEFAULT = "tmpfile"
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
     if(!fs.existsSync(instr)) {
         console.log("%s does not exist. Exiting.", instr);
-        process.exit(1); // http://nodejs.org/api/process.html#process_process_exit_code
+        process.exit(1); // http://nodejs.org/api/process.html#process_process_e                                                                                                 xit_code
     }
     return instr;
 };
@@ -67,11 +68,22 @@ var clone = function(fn) {
 
 
 var download_url_to_file=function(){
+     tmpfile =  'tmpfile' || TMPFILE_DEFAULT;
      rest.get(program.url).on('complete',function(response){
      if (response instanceof Error) {
            sys.puts('Error: ' + response.message);
          } else {
-           fs.writeFileSync('/tmp/tmp.txt', response);
+           fs.writeFile(tmpfile , response, function(err){
+                 if (err) throw err;
+                 //console.log(fs.readFileSync('tmpfile','utf-8'));
+                 var checkJson = checkHtmlFile('tmpfile', program.checks);
+                 var outJson = JSON.stringify(checkJson, null, 4);
+                 console.log(outJson);
+                 fs.unlink('tmpfile', function (err) {
+                     if (err) throw err;
+                        console.log('successfully deleted tmpfile');
+                     });
+                });
          }
      });
     }
@@ -85,13 +97,13 @@ if(require.main == module) {
         .parse(process.argv);
     if(program.url){
         download_url_to_file(process.url);
-        var checkJson = checkHtmlFile('/tmp/tmp.txt', program.checks);
     }else{
         var checkJson = checkHtmlFile(program.file, program.checks);
+        var outJson = JSON.stringify(checkJson, null, 4);
+        console.log(outJson);
     }
-    
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
+
